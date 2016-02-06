@@ -59,6 +59,9 @@ int main(){
     // Initialize TWI
     init_twi();
 
+    // Enable interrupts
+    sei();
+    
     // Initialize LSM6DS3
     init_LSM6DS3();
 
@@ -74,8 +77,6 @@ int main(){
     // Enable overflow interrupt
     TIMSK1 |= (1<<TOIE1);
      */
-    // Enable interrupts
-    sei();
 
     while(1){
         /*
@@ -93,55 +94,38 @@ int main(){
 
         // Read X axis of accelerometer
         read_LSM6DS3(OUTX_L_XL, rd_buf);            // Read low byte
-        _delay_ms(2);
-        sprintf(str,"%02X\r\n", rd_buf[0]);
-        UART_Transmit_String(str);
         X_XL[cnt%WINDOW_SIZE] = rd_buf[0];          // Save low byte
-        
         read_LSM6DS3(OUTX_H_XL, rd_buf);            // Read high byte
-        _delay_ms(2);
-        sprintf(str,"%02X\r\n", rd_buf[0]);
-        UART_Transmit_String(str);
         X_XL[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);    // Concatenate high and low bytes
 
         // Read Y axis of accelerometer
         read_LSM6DS3(OUTY_L_XL, rd_buf);            // Read low byte
-        _delay_ms(2);
         Y_XL[cnt%WINDOW_SIZE] = rd_buf[0];          // Save low byte
         read_LSM6DS3(OUTY_H_XL, rd_buf);            // Read high byte
-        _delay_ms(2);
         Y_XL[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);    // Concatenate high and low bytes
 
         // Read Z axis of accelerometer
         read_LSM6DS3(OUTZ_L_XL, rd_buf);            // Read low byte
-        _delay_ms(2);
         Z_XL[cnt%WINDOW_SIZE] = rd_buf[0];          // Save low byte
         read_LSM6DS3(OUTZ_H_XL, rd_buf);            // Read high byte
-        _delay_ms(2);
         Z_XL[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);    // Concatenate high and low bytes
 
         // Read X axis of gyroscope
         read_LSM6DS3(OUTX_L_G, rd_buf);             // Read low byte
-        _delay_ms(2);
         X_G[cnt%WINDOW_SIZE] = rd_buf[0];           // Save low byte
         read_LSM6DS3(OUTX_H_G, rd_buf);             // Read high byte
-        _delay_ms(2);
         X_G[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);     // Concatenate high and low bytes
 
         // Read Y axis of gyroscope
         read_LSM6DS3(OUTY_L_G, rd_buf);             // Read low byte
-        _delay_ms(2);
         Y_G[cnt%WINDOW_SIZE] = rd_buf[0];           // Save low byte
         read_LSM6DS3(OUTY_H_G, rd_buf);             // Read high byte
-        _delay_ms(2);
         Y_G[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);     // Concatenate high and low bytes
 
         // Read Z axis of gyroscope
         read_LSM6DS3(OUTZ_L_G, rd_buf);             // Read low byte
-        _delay_ms(2);
         Z_G[cnt%WINDOW_SIZE] = rd_buf[0];           // Save low byte
         read_LSM6DS3(OUTZ_H_G, rd_buf);             // Read high byte
-        _delay_ms(2);
         Z_G[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);     // Concatenate high and low bytes
 
 
@@ -181,7 +165,7 @@ int main(){
         avg_diff_X_XL /= NUM_AVGS;
         avg_diff_Y_XL /= NUM_AVGS;
         avg_diff_Z_XL /= NUM_AVGS; 				
-/*
+        
         // Print Orientation and Motion data
         sprintf(str,"%02X\t\t%i\t%i\t\t%i\t%i\t%i\t\t%i\t%i\t%i\t\r\n", IDENTIFIER,\
                 pitch, roll,\
@@ -189,7 +173,7 @@ int main(){
                 x_gyro[cnt%WINDOW_SIZE], y_gyro[cnt%WINDOW_SIZE], z_gyro[cnt%WINDOW_SIZE]);
         //                               diff_time);
         UART_Transmit_String(str);
-*/
+        
         cnt++;
         //				timer_ovf_cnt = 0;
     }
