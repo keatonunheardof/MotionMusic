@@ -4,17 +4,13 @@
 // Function Prototypes 
 //*****************************************************************************
 void init_LSM6DS3();
-void write_LSM6DS3(uint8_t address, uint8_t data);
-uint8_t read_LSM6DS3(uint8_t address);
-int16_t twos_comp(uint16_t val);
+void write_LSM6DS3(uint8_t address, uint8_t value);
+void read_LSM6DS3(uint8_t address, uint8_t *rd_buf);
 void init_accel();
 void init_gyro();
 uint8_t accel_data_avail();
 uint8_t gyro_data_avail();
-void get_accel_data();
-void get_gyro_data();
-void set_bits(uint8_t address, uint8_t bits_to_set);
-void init_accel_fifo();
+void set_bits(uint8_t address, uint8_t bits_to_set, uint8_t *rd_buf);
 
 //*****************************************************************************
 // Device Register Map

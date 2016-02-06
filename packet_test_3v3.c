@@ -9,7 +9,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "uart_interface.h"
-#include "spi_interface.h"
+#include "twi_interface.h"
 #include "LSM6DS3.h"
 
 #define ACCEL_RANGE 8
@@ -33,10 +33,10 @@ int main(){
 		// Initialize UART
 		UART_Init(MY_UBRR);
 
-		// Initialize SPI
-		SPI_Init();
-
-		// Initialize LSM6DS3
+		// Initialize TWI
+		init_twi();
+        
+        // Initialize LSM6DS3
 		init_LSM6DS3();
 
 		// Initialize Accelerometer 
@@ -72,6 +72,8 @@ int main(){
 		uint16_t cnt = 0;	
 		uint8_t i;
 
+        uint8_t rd_buf[1];
+
 		time[0] = TCNT1;
 		time[1] = TCNT1;
 		
@@ -89,23 +91,44 @@ int main(){
 				// Wait while data is not available
 				while(!gyro_data_avail()){}
 
-				// Get new accelerometer data 
-				X_XL[cnt%WINDOW_SIZE] = SPI_Receive(OUTX_L_XL);
-				X_XL[cnt%WINDOW_SIZE] |= (SPI_Receive(OUTX_H_XL)<<8);
-				Y_XL[cnt%WINDOW_SIZE] = SPI_Receive(OUTY_L_XL);
-				Y_XL[cnt%WINDOW_SIZE] |= (SPI_Receive(OUTY_H_XL)<<8);
-				Z_XL[cnt%WINDOW_SIZE] = SPI_Receive(OUTZ_L_XL);
-				Z_XL[cnt%WINDOW_SIZE] |= (SPI_Receive(OUTZ_H_XL)<<8);
+				// Read X axis of accelerometer
+                read_LSM6DS3(OUTX_L_XL, rd_buf);            // Read low byte
+                X_XL[cnt%WINDOW_SIZE] = rd_buf[0];          // Save low byte
+                read_LSM6DS3(OUTX_H_XL, rd_buf);            // Read high byte
+                X_XL[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);    // Concatenate high and low bytes
 
-				// Get new gyroscope data 
-				X_G[cnt%WINDOW_SIZE] = SPI_Receive(OUTX_L_G);
-				X_G[cnt%WINDOW_SIZE] |= (SPI_Receive(OUTX_H_G)<<8);
-				Y_G[cnt%WINDOW_SIZE] = SPI_Receive(OUTY_L_G);
-				Y_G[cnt%WINDOW_SIZE] |= (SPI_Receive(OUTY_H_G)<<8);
-				Z_G[cnt%WINDOW_SIZE] = SPI_Receive(OUTZ_L_G);
-				Z_G[cnt%WINDOW_SIZE] |= (SPI_Receive(OUTZ_H_G)<<8);
-
-				// Get change in acceleration 
+				// Read Y axis of accelerometer
+                read_LSM6DS3(OUTY_L_XL, rd_buf);            // Read low byte
+                Y_XL[cnt%WINDOW_SIZE] = rd_buf[0];          // Save low byte
+                read_LSM6DS3(OUTY_H_XL, rd_buf);            // Read high byte
+                Y_XL[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);    // Concatenate high and low bytes
+				
+                // Read Z axis of accelerometer
+                read_LSM6DS3(OUTZ_L_XL, rd_buf);            // Read low byte
+                Z_XL[cnt%WINDOW_SIZE] = rd_buf[0];          // Save low byte
+                read_LSM6DS3(OUTZ_H_XL, rd_buf);            // Read high byte
+                Z_XL[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);    // Concatenate high and low bytes
+                
+                // Read X axis of gyroscope
+                read_LSM6DS3(OUTX_L_G, rd_buf);             // Read low byte
+                X_G[cnt%WINDOW_SIZE] = rd_buf[0];           // Save low byte
+                read_LSM6DS3(OUTX_H_G, rd_buf);             // Read high byte
+                X_G[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);     // Concatenate high and low bytes
+                
+                // Read Y axis of gyroscope
+                read_LSM6DS3(OUTY_L_G, rd_buf);             // Read low byte
+                Y_G[cnt%WINDOW_SIZE] = rd_buf[0];           // Save low byte
+                read_LSM6DS3(OUTY_H_G, rd_buf);             // Read high byte
+                Y_G[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);     // Concatenate high and low bytes
+                
+                // Read Z axis of gyroscope
+                read_LSM6DS3(OUTZ_L_G, rd_buf);             // Read low byte
+                Z_G[cnt%WINDOW_SIZE] = rd_buf[0];           // Save low byte
+                read_LSM6DS3(OUTZ_H_G, rd_buf);             // Read high byte
+                Z_G[cnt%WINDOW_SIZE] |= (rd_buf[0]<<8);     // Concatenate high and low bytes
+            
+				
+                // Get change in acceleration 
 				diff_X_XL[cnt%WINDOW_SIZE] = (X_XL[(cnt-1)%WINDOW_SIZE] -  X_XL[cnt%WINDOW_SIZE]) * ACCEL_RANGE / pow(2,6);
 				diff_Y_XL[cnt%WINDOW_SIZE] = (Y_XL[(cnt-1)%WINDOW_SIZE] -  Y_XL[cnt%WINDOW_SIZE]) * ACCEL_RANGE / pow(2,6);
 				diff_Z_XL[cnt%WINDOW_SIZE] = (Z_XL[(cnt-1)%WINDOW_SIZE] -  Z_XL[cnt%WINDOW_SIZE]) * ACCEL_RANGE / pow(2,6);		

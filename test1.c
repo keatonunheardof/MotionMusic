@@ -14,8 +14,8 @@
 #include "LSM6DS3.h"
 
 
+uint8_t wr_buf[1];
 uint8_t rd_buf[1];
-uint8_t buf[1];
 
 //*****************************************************************************
 // Main Program
@@ -31,11 +31,20 @@ int main(){
     init_twi();	
 
     sei();
-    
-    read_LSM6DS3(WHO_AM_I, rd_buf);
-//    _delay_ms(2);
-    sprintf(str,"%02X\r\n",rd_buf[0]);
-    UART_Transmit_String(str);
+
+    wr_buf[0] = WHO_AM_I;	
+
+    while(1){
+
+        twi_start_wr(LSM6DS3_WRITE,wr_buf,1);
+
+        twi_start_rd(LSM6DS3_READ,rd_buf,1);
+
+        sprintf(str,"%02X\r\n", rd_buf[0]);
+
+        UART_Transmit_String(str);
+
+    }
 
     return 0;
 }
