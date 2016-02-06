@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include "uart_interface.h"
 #include "spi_interface.h"
+#include "twi_interface.h"
 #include "LSM6DS3.h"
 
 
@@ -30,30 +31,28 @@ void init_LSM6DS3(){
 // Write to LSM6DS3
 //*****************************************************************************
 // 
-// This function is used to write to a register on the LSM6DS3. It first 
-// attempts to set the register, and then it reads back the value of the 
-// register. If the value that is read back is the same value that was sent, it
-// prints a success message over UART. If the value that is read back is not 
-// the same as the value that was sent, it prints a fail message, along with 
-// the returned value.
+// This function is used to write to a register on the LSM6DS3. The byte that 
+// is in value gets written to the register location specified by address. 
 
-void write_LSM6DS3(uint8_t address, uint8_t data){
+void write_LSM6DS3(uint8_t address, uint8_t value){
 
-    char data_str[3];
-    uint8_t data_in; 
+    uint8_t addr_buf[1];
+    uint8_t wr_buf[1];
 
-    // Transmit data
-    SPI_Transmit(address, data);    
+    // Save address to address buffer
+    addr_buf[0] = address;
 
-    // Read data
-    data_in = SPI_Receive(address);    
+    // Save address to address buffer
+    wr_buf[0] = value;
 
-    // Check if transfer was successful
-    if(data_in == data) UART_Transmit_String("SUCCESS!\r\n");
-    else{ UART_Transmit_String("FAIL!    Return Value: "); 
-        sprintf(data_str,"%d",data_in);
-        UART_Transmit_String(data_str);
-        UART_Transmit_String("\r\n");}
+    // Write register address of where to read data from
+    twi_start_wr(LSM6DS3_WRITE, addr_buf, 1);
+
+    // Recieve data from register address and store in val_buf
+    twi_start_wr(LSM6DS3_WRITE, wr_buf, 1);
+    
+    // Wait until data is sent
+    while(twi_busy());
 
 }
 
@@ -62,17 +61,24 @@ void write_LSM6DS3(uint8_t address, uint8_t data){
 // Read from LSM6DS3
 //*****************************************************************************
 // 
-// This function is used to read from register on the LSM6DS3 and then it 
-// returns the value that is in that register. 
+// This function is used to read from the register specified by address on the 
+// LSM6DS3. The result is then saved into rd_buf. 
 
-uint8_t read_LSM6DS3(uint8_t address){
+void read_LSM6DS3(uint8_t address, uint8_t *rd_buf){
 
-    uint8_t data_in;
+    uint8_t addr_buf[1];
 
-    // Read from LSM6DS3
-    data_in = SPI_Receive(address);         
+    // Save address to address buffer
+    addr_buf[0] = address;
 
-    return data_in;
+    // Write register address of where to read data from
+    twi_start_wr(LSM6DS3_WRITE, addr_buf, 1);
+
+    // Recieve data from register address and store in rd_buf
+    twi_start_rd(LSM6DS3_READ, rd_buf, 1);
+
+    // Wait until data is recieved
+    while(twi_busy());
 }
 
 
@@ -82,17 +88,18 @@ uint8_t read_LSM6DS3(uint8_t address){
 //  
 // This function initializes the accelerometer. Listed Below are the parameters
 // that the accelerometer is initialized to.
-
 void init_accel(){
+    
+    uint8_t rd_buf[1];
 
     // Enable X,Y and Z accelerometer axes
-    write_LSM6DS3(CTRL9_XL, 0x38); 
+    set_bits(CTRL9_XL, ((1<<Xen_XL) | (1<<Yen_XL) | (1<<Zen_XL)), rd_buf); 
 
     // Set accelerometer ODR to 1.66KHz and acceleration range to +/- 8G's
-    set_bits(CTRL1_XL, ((1<<ODR_XL3) | (1<<FS_XL0) | (1<<FS_XL1)));
-    
+    set_bits(CTRL1_XL, ((1<<ODR_XL3) | (1<<FS_XL0) | (1<<FS_XL1)), rd_buf);
+
     // Enable data ready interrupt on INT1
-    set_bits(INT1_CTRL, (1<<INT1_DRDY_XL));
+    set_bits(INT1_CTRL, (1<<INT1_DRDY_XL), rd_buf);
 
 }
 
@@ -105,14 +112,16 @@ void init_accel(){
 
 void init_gyro(){
 
+    uint8_t rd_buf[1];
+
     // Enable X,Y and Z gyroscope axes
-    write_LSM6DS3(CTRL10_C, 0x38);   
+    set_bits(CTRL10_C, ((1<<Xen_G) | (1<<Yen_G) | (1<<Zen_G)), rd_buf); 
 
     // Set gyroscope ODR to 1.66KHz angular rate to to 1000 degrees/second
-    set_bits(CTRL2_G, ((1<<ODR_G3)| (1<<FS_G1)));
-    
+    set_bits(CTRL2_G, ((1<<ODR_G3)| (1<<FS_G1)), rd_buf);
+
     // Enable gyroscope data ready interrupt on INT1
-    set_bits(INT2_CTRL, (1<<INT2_DRDY_G));   
+    set_bits(INT2_CTRL, (1<<INT2_DRDY_G), rd_buf);   
 
 }
 
@@ -126,13 +135,13 @@ void init_gyro(){
 
 uint8_t accel_data_avail(){
 
-    uint8_t status;
+    static uint8_t status_buf[1];
 
     // Read status register
-    status = SPI_Receive(STATUS_REG);
+    read_LSM6DS3(STATUS_REG, status_buf);
 
     // If Accelerometer data is ready
-    if(status & (1<<XLDA))
+    if(status_buf[0] & (1<<XLDA))
         return 1;
     else
         return 0;
@@ -148,13 +157,13 @@ uint8_t accel_data_avail(){
 
 uint8_t gyro_data_avail(){
 
-    uint8_t status; 
+    static uint8_t status_buf[1]; 
 
     // Read status register
-    status = SPI_Receive(STATUS_REG);
+    read_LSM6DS3(STATUS_REG, status_buf);
 
-    // If Accelerometer data is ready
-    if(status & (1<<GDA))
+    // If Gyroscope data is ready
+    if(status_buf[0] & (1<<GDA))
         return 1;
     else
         return 0;
@@ -168,21 +177,32 @@ uint8_t gyro_data_avail(){
 // 
 // This function sets specific register bits in the LSM6DS3 while leaving the 
 // other bits unchanged.
- 
-void set_bits(uint8_t address, uint8_t bits_to_set){
+void set_bits(uint8_t address, uint8_t bits_to_set, uint8_t *rd_buf){
 
-    uint8_t curr_bits;
     uint8_t new_byte;
-
+/*
     // Get current bits in register
-    curr_bits = read_LSM6DS3(address);
+    read_LSM6DS3(address, curr_bits);
 
     // Save new byte
-    new_byte = curr_bits | bits_to_set;
+    new_byte = curr_bits[0] | bits_to_set;
 
     // Write new byte to register
     write_LSM6DS3(address, new_byte);
+    
+    uint8_t addr_buf[1];
+    uint8_t wr_buf[1];
 
+    // Save address to address buffer
+    addr_buf[0] = address;
+
+    // Save address to address buffer
+    wr_buf[0] = value;
+
+    // Write register address of where to read data from
+    twi_start_wr(LSM6DS3_WRITE, addr_buf, 1);
+
+    // Recieve data from register address and store in val_buf
+    twi_start_rd(LSM6DS3_WRITE, wr_buf, 1);
+*/
 }
-
-
