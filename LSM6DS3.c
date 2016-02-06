@@ -36,20 +36,14 @@ void init_LSM6DS3(){
 
 void write_LSM6DS3(uint8_t address, uint8_t value){
 
-    uint8_t addr_buf[1];
-    uint8_t wr_buf[1];
+    uint8_t wr_buf[2];
 
     // Save address to address buffer
-    addr_buf[0] = address;
+    wr_buf[0] = address;
+    wr_buf[1] = value;
 
-    // Save address to address buffer
-    wr_buf[0] = value;
-
-    // Write register address of where to read data from
-    twi_start_wr(LSM6DS3_WRITE, addr_buf, 1);
-
-    // Recieve data from register address and store in val_buf
-    twi_start_wr(LSM6DS3_WRITE, wr_buf, 1);
+    // Write value to register address
+    twi_start_wr(LSM6DS3_WRITE, wr_buf, 2);
     
     // Wait until data is sent
     while(twi_busy());
@@ -90,16 +84,14 @@ void read_LSM6DS3(uint8_t address, uint8_t *rd_buf){
 // that the accelerometer is initialized to.
 void init_accel(){
     
-    uint8_t rd_buf[1];
-
     // Enable X,Y and Z accelerometer axes
-    set_bits(CTRL9_XL, ((1<<Xen_XL) | (1<<Yen_XL) | (1<<Zen_XL)), rd_buf); 
+    set_bits(CTRL9_XL, Xen_XL | Yen_XL | Zen_XL); 
 
     // Set accelerometer ODR to 1.66KHz and acceleration range to +/- 8G's
-    set_bits(CTRL1_XL, ((1<<ODR_XL3) | (1<<FS_XL0) | (1<<FS_XL1)), rd_buf);
+    set_bits(CTRL1_XL, ODR_XL2 | FS_XL0 | FS_XL1);
 
     // Enable data ready interrupt on INT1
-    set_bits(INT1_CTRL, (1<<INT1_DRDY_XL), rd_buf);
+    set_bits(INT1_CTRL, INT1_DRDY_XL);
 
 }
 
@@ -112,16 +104,14 @@ void init_accel(){
 
 void init_gyro(){
 
-    uint8_t rd_buf[1];
-
     // Enable X,Y and Z gyroscope axes
-    set_bits(CTRL10_C, ((1<<Xen_G) | (1<<Yen_G) | (1<<Zen_G)), rd_buf); 
+    set_bits(CTRL10_C, Xen_G | Yen_G | Zen_G); 
 
     // Set gyroscope ODR to 1.66KHz angular rate to to 1000 degrees/second
-    set_bits(CTRL2_G, ((1<<ODR_G3)| (1<<FS_G1)), rd_buf);
+    set_bits(CTRL2_G, ODR_G2 | FS_G1);
 
     // Enable gyroscope data ready interrupt on INT1
-    set_bits(INT2_CTRL, (1<<INT2_DRDY_G), rd_buf);   
+    set_bits(INT2_CTRL, INT2_DRDY_G);   
 
 }
 
@@ -141,7 +131,7 @@ uint8_t accel_data_avail(){
     read_LSM6DS3(STATUS_REG, status_buf);
 
     // If Accelerometer data is ready
-    if(status_buf[0] & (1<<XLDA))
+    if(status_buf[0] & XLDA)
         return 1;
     else
         return 0;
@@ -163,7 +153,7 @@ uint8_t gyro_data_avail(){
     read_LSM6DS3(STATUS_REG, status_buf);
 
     // If Gyroscope data is ready
-    if(status_buf[0] & (1<<GDA))
+    if(status_buf[0] & GDA)
         return 1;
     else
         return 0;
@@ -177,10 +167,12 @@ uint8_t gyro_data_avail(){
 // 
 // This function sets specific register bits in the LSM6DS3 while leaving the 
 // other bits unchanged.
-void set_bits(uint8_t address, uint8_t bits_to_set, uint8_t *rd_buf){
+
+void set_bits(uint8_t address, uint8_t bits_to_set){
 
     uint8_t new_byte;
-/*
+    uint8_t curr_bits[1];
+
     // Get current bits in register
     read_LSM6DS3(address, curr_bits);
 
@@ -190,19 +182,54 @@ void set_bits(uint8_t address, uint8_t bits_to_set, uint8_t *rd_buf){
     // Write new byte to register
     write_LSM6DS3(address, new_byte);
     
-    uint8_t addr_buf[1];
-    uint8_t wr_buf[1];
+}
 
-    // Save address to address buffer
-    addr_buf[0] = address;
 
-    // Save address to address buffer
-    wr_buf[0] = value;
+//*****************************************************************************
+// Clear Register Bits 
+//*****************************************************************************
+// 
+// This function clears specific register bits in the LSM6DS3 while leaving the 
+// other bits unchanged.
 
-    // Write register address of where to read data from
-    twi_start_wr(LSM6DS3_WRITE, addr_buf, 1);
+void clear_bits(uint8_t address, uint8_t bits_to_clear){
 
-    // Recieve data from register address and store in val_buf
-    twi_start_rd(LSM6DS3_WRITE, wr_buf, 1);
-*/
+    uint8_t new_byte;
+    uint8_t curr_bits[1];
+
+    // Get current bits in register
+    read_LSM6DS3(address, curr_bits);
+
+    // Save new byte
+    new_byte = curr_bits[0] &~ bits_to_clear;
+
+    // Write new byte to register
+    write_LSM6DS3(address, new_byte);
+    
+}
+
+
+//*****************************************************************************
+// Check Register Bit 
+//*****************************************************************************
+// 
+// This function checks a specific register bit in the LSM6DS3 and returns a 1
+// if the bit is set and a 0 if the bit is clear.
+
+uint8_t check_bit(uint8_t address, uint8_t bit_to_check){
+
+    uint8_t bit_result;
+    uint8_t curr_bits[1];
+
+    // Get current bits in register
+    read_LSM6DS3(address, curr_bits);
+
+    // Check bit
+    bit_result = curr_bits[0] &= bit_to_check;
+
+    if(bit_result == 0)
+        return 0;
+
+    return 1;
+
 }

@@ -14,14 +14,14 @@
 #include "LSM6DS3.h"
 
 
-uint8_t rd_buf[1];
-uint8_t buf[1];
 
 //*****************************************************************************
 // Main Program
 //*****************************************************************************
 
 int main(){
+
+    uint8_t rd_buf[1];
 
     char str[6];
 
@@ -31,11 +31,22 @@ int main(){
     init_twi();	
 
     sei();
+        
+    init_LSM6DS3();
     
-    read_LSM6DS3(WHO_AM_I, rd_buf);
-//    _delay_ms(2);
+    rd_buf[0] = check_bit(CTRL9_XL,SOFT_EN);
     sprintf(str,"%02X\r\n",rd_buf[0]);
     UART_Transmit_String(str);
 
+    set_bits(CTRL9_XL, SOFT_EN);
+    rd_buf[0] = check_bit(CTRL9_XL,SOFT_EN);
+    sprintf(str,"%02X\r\n",rd_buf[0]);
+    UART_Transmit_String(str);
+
+    clear_bits(CTRL9_XL, SOFT_EN);
+    rd_buf[0] = check_bit(CTRL9_XL,SOFT_EN);
+    sprintf(str,"%02X\r\n",rd_buf[0]);
+    UART_Transmit_String(str);
+    
     return 0;
 }

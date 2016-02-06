@@ -1,5 +1,5 @@
-#PRG             =packet_test_3v3
-PRG             =test
+PRG             =packet_test_3v3
+#PRG             =test
 
 OBJ            = $(PRG).o uart_interface.o spi_interface.o LSM6DS3.o twi_interface.o
 
