@@ -16,13 +16,8 @@
 #define GYRO_RANGE  1000
 #define IDENTIFIER 	0xAA
 #define NUM_AVGS 	50
-/*
-   uint8_t timer_ovf_cnt = 0;
 
-   ISR(TIMER1_OVF_vect){
-   timer_ovf_cnt++;
-   }
- */
+
 //*****************************************************************************
 // Main Program
 //*****************************************************************************
@@ -64,40 +59,40 @@ int main(){
         while(!gyro_data_avail()){}
 
         // Read X axis of accelerometer
-        read_LSM6DS3(OUTX_L_XL, rd_buf);            // Read low byte
-        X_XL = rd_buf[0];          // Save low byte
-        read_LSM6DS3(OUTX_H_XL, rd_buf);            // Read high byte
-        X_XL |= (rd_buf[0]<<8);    // Concatenate high and low bytes
+        read_LSM6DS3(OUTX_L_XL, rd_buf);    // Read low byte                
+        X_XL = rd_buf[0];                   // Save low byte                
+        read_LSM6DS3(OUTX_H_XL, rd_buf);    // Read high byte               
+        X_XL |= (rd_buf[0]<<8);             // Concatenate high and low bytes
 
         // Read Y axis of accelerometer
-        read_LSM6DS3(OUTY_L_XL, rd_buf);            // Read low byte
-        Y_XL = rd_buf[0];          // Save low byte
-        read_LSM6DS3(OUTY_H_XL, rd_buf);            // Read high byte
-        Y_XL |= (rd_buf[0]<<8);    // Concatenate high and low bytes
+        read_LSM6DS3(OUTY_L_XL, rd_buf);    // Read low byte                                        
+        Y_XL = rd_buf[0];                   // Save low byte                           
+        read_LSM6DS3(OUTY_H_XL, rd_buf);    // Read high byte                                        
+        Y_XL |= (rd_buf[0]<<8);             // Concatenate high and low bytes                       
 
-        // Read Z axis of accelerometer
-        read_LSM6DS3(OUTZ_L_XL, rd_buf);            // Read low byte
-        Z_XL = rd_buf[0];          // Save low byte
-        read_LSM6DS3(OUTZ_H_XL, rd_buf);            // Read high byte
-        Z_XL |= (rd_buf[0]<<8);    // Concatenate high and low bytes
+        // Read Z axis of accelerometer     // Read low byte                  
+        read_LSM6DS3(OUTZ_L_XL, rd_buf);    // Save low byte                                         
+        Z_XL = rd_buf[0];                   // Read high byte                          
+        read_LSM6DS3(OUTZ_H_XL, rd_buf);    // Concatenate high and low bytes                         
+        Z_XL |= (rd_buf[0]<<8);                                      
 
-        // Read X axis of gyroscope
-        read_LSM6DS3(OUTX_L_G, rd_buf);             // Read low byte
-        X_G = rd_buf[0];           // Save low byte
-        read_LSM6DS3(OUTX_H_G, rd_buf);             // Read high byte
-        X_G |= (rd_buf[0]<<8);     // Concatenate high and low bytes
+        // Read X axis of gyroscope         // Read low byte                 
+        read_LSM6DS3(OUTX_L_G, rd_buf);     // Save low byte                                           
+        X_G = rd_buf[0];                    // Read high byte                            
+        read_LSM6DS3(OUTX_H_G, rd_buf);     // Concatenate high and low bytes                         
+        X_G |= (rd_buf[0]<<8);                                        
 
-        // Read Y axis of gyroscope
-        read_LSM6DS3(OUTY_L_G, rd_buf);             // Read low byte
-        Y_G = rd_buf[0];           // Save low byte
-        read_LSM6DS3(OUTY_H_G, rd_buf);             // Read high byte
-        Y_G |= (rd_buf[0]<<8);     // Concatenate high and low bytes
+        // Read Y axis of gyroscope         // Read low byte                 
+        read_LSM6DS3(OUTY_L_G, rd_buf);     // Save low byte                                           
+        Y_G = rd_buf[0];                    // Read high byte                       
+        read_LSM6DS3(OUTY_H_G, rd_buf);     // Concatenate high and low bytes       
+        Y_G |= (rd_buf[0]<<8);        
 
-        // Read Z axis of gyroscope
-        read_LSM6DS3(OUTZ_L_G, rd_buf);             // Read low byte
-        Z_G = rd_buf[0];           // Save low byte
-        read_LSM6DS3(OUTZ_H_G, rd_buf);             // Read high byte
-        Z_G |= (rd_buf[0]<<8);     // Concatenate high and low bytes
+        // Read Z axis of gyroscope         // Read low byte                 
+        read_LSM6DS3(OUTZ_L_G, rd_buf);     // Save low byte                 
+        Z_G = rd_buf[0];                    // Read high byte                
+        read_LSM6DS3(OUTZ_H_G, rd_buf);     // Concatenate high and low bytes
+        Z_G |= (rd_buf[0]<<8);     
 
         // Calculate current acceleration for pitch and roll calculations
         x_accel_dbl = X_XL * ACCEL_RANGE / pow(2,15);
@@ -108,7 +103,7 @@ int main(){
         pitch = (int16_t)(atan(x_accel_dbl / sqrt(pow(y_accel_dbl,2) + pow(z_accel_dbl,2))) * 180 / M_PI);
         roll = (int16_t)(atan( y_accel_dbl / sqrt(pow(x_accel_dbl,2) + pow(z_accel_dbl,2))) * 180 / M_PI);
         
-        // Calculate current acceleration for pitch and roll calculations
+        // Calculate current acceleration and scale by 100 to display to terminal
         x_accel = X_XL * (100 * ACCEL_RANGE / pow(2,15));
         y_accel = Y_XL * (100 * ACCEL_RANGE / pow(2,15));
         z_accel = Z_XL * (100 * ACCEL_RANGE / pow(2,15));
